@@ -5,15 +5,21 @@ import android.graphics.PixelFormat
 import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -24,6 +30,8 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.focusastra.FocusApplication
 import com.example.focusastra.data.AppLimit
+import com.example.focusastra.ui.Eyebrow
+import com.example.focusastra.ui.theme.FocusPalette
 import com.example.focusastra.ui.theme.FocusAstraTheme
 import kotlinx.coroutines.launch
 import java.text.DateFormat
@@ -57,37 +65,76 @@ class FocusOverlay(
                     val state by app.store.state.collectAsState()
                     val scope = rememberCoroutineScope()
                     if (item != null) {
-                        Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
-                            .systemBarsPadding().padding(28.dp).verticalScroll(rememberScrollState()),
-                            verticalArrangement = Arrangement.Center) {
-                            Text("FOCUSASTRA", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.height(24.dp))
-                            Text(if (item.blocked) "Daily limit reached" else "Before you keep scrolling…", style = MaterialTheme.typography.headlineLarge)
-                            Spacer(Modifier.height(12.dp))
-                            Text(item.limit.label, style = MaterialTheme.typography.titleLarge)
-                            Spacer(Modifier.height(20.dp))
-                            if (item.blocked) {
-                                Text(item.problem ?: "You used your ${item.limit.policy.minutes} minute allowance. Take this time for something that matters to you.")
-                                Spacer(Modifier.height(16.dp))
-                                Text("0m remaining", style = MaterialTheme.typography.titleMedium)
-                                Text("Available again ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(item.limit.periodEnd))}.")
-                            } else {
-                                Text("Did you finish these?", style = MaterialTheme.typography.titleMedium)
-                                Spacer(Modifier.height(12.dp))
-                                state.tasks.filter { !it.completed }.forEach { task ->
-                                    Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                                        Checkbox(false, onCheckedChange = { checked -> scope.launch {
-                                            runCatching { app.tasks.complete(task.id, checked) }.onFailure { app.monitorError.value = it.message }
-                                        } })
-                                        Text(task.title, Modifier.weight(1f))
-                                    }
-                                }
-                                if (state.tasks.none { !it.completed }) Text("Everything is checked off. Nice work.")
-                                Spacer(Modifier.height(20.dp))
-                                Button(onClick = onContinue, modifier = Modifier.fillMaxWidth()) { Text("Continue") }
+                        Column(Modifier.fillMaxSize().background(FocusPalette.background).systemBarsPadding().padding(horizontal = 25.dp)) {
+                            Row(Modifier.fillMaxWidth().padding(top = 34.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Eyebrow(if (item.blocked) "FOCUSASTRA / BOUNDARY" else "FOCUSASTRA / CHECK-IN")
+                                Spacer(Modifier.weight(1f))
+                                Box(Modifier.size(10.dp).background(FocusPalette.crimson, RoundedCornerShape(50)))
                             }
-                            Spacer(Modifier.height(12.dp))
-                            OutlinedButton(onClick = onHome, modifier = Modifier.fillMaxWidth()) { Text("Go Home") }
+                            Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                                Spacer(Modifier.height(43.dp))
+                                Text(if (item.blocked) "DAILY LIMIT REACHED" else "ARE YOU SURE?",
+                                    style = MaterialTheme.typography.titleMedium, color = FocusPalette.crimson)
+                                Spacer(Modifier.height(15.dp))
+                                Text(if (item.blocked) "The boundary\nholds." else "You have\nthings to do.",
+                                    style = MaterialTheme.typography.headlineLarge, color = FocusPalette.text)
+                                Spacer(Modifier.height(15.dp))
+                                Text(if (item.blocked) item.problem ?: "${item.limit.label} has used its ${item.limit.policy.minutes}-minute daily allowance."
+                                    else "${item.limit.label} is paused. Take one clear action before returning.",
+                                    style = MaterialTheme.typography.bodyLarge, color = FocusPalette.muted)
+                                Spacer(Modifier.height(46.dp))
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Eyebrow(if (item.blocked) "AVAILABLE AGAIN" else "YOUR TASKS")
+                                    Spacer(Modifier.weight(1f))
+                                    Text(if (item.blocked) DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(item.limit.periodEnd))
+                                        else "${item.limit.usedMs / 60_000}M USED", style = MaterialTheme.typography.labelMedium,
+                                        color = FocusPalette.text)
+                                }
+                                Spacer(Modifier.height(16.dp))
+                                if (item.blocked) {
+                                    HorizontalDivider(color = FocusPalette.line)
+                                    Row(Modifier.fillMaxWidth().padding(vertical = 21.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Text("0m remaining", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                                        Text("●", color = FocusPalette.crimson)
+                                    }
+                                    HorizontalDivider(color = FocusPalette.line)
+                                } else {
+                                    val open = state.tasks.filter { !it.completed }
+                                    if (open.isEmpty()) Text("Everything is checked off.", style = MaterialTheme.typography.bodyMedium,
+                                        color = FocusPalette.muted)
+                                    open.forEach { task ->
+                                        HorizontalDivider(color = FocusPalette.line)
+                                        Row(Modifier.fillMaxWidth().clickable { scope.launch {
+                                            runCatching { app.tasks.complete(task.id, true) }.onFailure { app.monitorError.value = it.message }
+                                        } }.padding(vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Box(Modifier.size(25.dp).border(1.dp, FocusPalette.text, RoundedCornerShape(7.dp)))
+                                            Spacer(Modifier.width(16.dp))
+                                            Text(task.title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
+                                                maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                            Text("↗", color = FocusPalette.muted, fontSize = 19.sp)
+                                        }
+                                    }
+                                    HorizontalDivider(color = FocusPalette.line)
+                                }
+                                Spacer(Modifier.height(26.dp))
+                            }
+                            Button(onClick = onHome, modifier = Modifier.fillMaxWidth().height(52.dp),
+                                shape = RoundedCornerShape(50), colors = ButtonDefaults.buttonColors(
+                                    containerColor = FocusPalette.text, contentColor = FocusPalette.background)) {
+                                Text("LEAVE APP", style = MaterialTheme.typography.labelLarge)
+                            }
+                            if (!item.blocked) {
+                                Spacer(Modifier.height(12.dp))
+                                OutlinedButton(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(52.dp),
+                                    shape = RoundedCornerShape(50), border = androidx.compose.foundation.BorderStroke(1.dp, FocusPalette.text)) {
+                                    Text("CONTINUE", style = MaterialTheme.typography.labelLarge, color = FocusPalette.text)
+                                }
+                                Spacer(Modifier.height(13.dp))
+                                Text("NEXT CHECK-IN AFTER YOUR SET INTERVAL", modifier = Modifier.fillMaxWidth(),
+                                    style = MaterialTheme.typography.labelSmall, color = FocusPalette.muted,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            }
+                            Spacer(Modifier.height(22.dp))
                         }
                     }
                 }

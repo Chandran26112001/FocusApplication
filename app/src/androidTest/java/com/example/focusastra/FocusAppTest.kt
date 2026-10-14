@@ -23,19 +23,19 @@ class FocusAppTest {
     }
 
     @Test fun dashboardAndTaskCreation() {
-        compose.onNodeWithText("Make room for today.").assertIsDisplayed()
-        compose.onNodeWithText("Add task").performScrollTo().performClick()
+        compose.onNodeWithText("Your limits").assertIsDisplayed()
+        compose.onNodeWithText("TODOS").performClick()
+        compose.onNodeWithText("ADD A TASK").performClick()
         compose.onNodeWithText("Task").performTextInput("Prepare interview")
-        compose.onAllNodesWithText("Add task").onLast().performClick()
+        compose.onNodeWithText("Add task").performClick()
         compose.waitUntil(5_000) { app.store.state.value.tasks.any { it.title == "Prepare interview" } }
-        compose.onNodeWithText("Prepare interview").performScrollTo().assertIsDisplayed()
-        compose.onAllNodes(isToggleable()).onLast().performClick()
+        compose.onNodeWithText("Prepare interview").assertIsDisplayed().performClick()
         compose.waitUntil(5_000) { app.store.state.value.tasks.single().completed }
     }
 
     @Test fun explicitAccessibilityDisclosure() {
-        compose.onNodeWithText("Settings").performClick()
-        compose.onAllNodesWithText("Set up")[1].performClick()
+        compose.onNodeWithContentDescription("Settings").performClick()
+        compose.onAllNodesWithText("SET UP")[1].performClick()
         compose.onNodeWithText("App detection & blocking").assertIsDisplayed()
         compose.onNodeWithText("Agree & open Settings").assertIsDisplayed()
         compose.onNodeWithText("Cancel").performClick()

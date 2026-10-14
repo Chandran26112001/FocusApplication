@@ -54,13 +54,13 @@ class EnforcementServiceTest {
         val (start, end) = Periods.containing(System.currentTimeMillis(), 0)
         app.store.update { it.copy(limits = listOf(AppLimit(target, "Clock", LimitPolicy(1, 10), start, end, 59_000))) }
         openTarget()
-        await { overlayNode("Daily limit reached") != null }
+        await { overlayNode("DAILY LIMIT REACHED") != null }
         assertTrue(app.store.state.value.limits.single().exhausted)
-        assertNull(overlayNode("Continue"))
-        clickOverlay("Go Home")
-        await { overlayNode("Daily limit reached") == null }
+        assertNull(overlayNode("CONTINUE"))
+        clickOverlay("LEAVE APP")
+        await { overlayNode("DAILY LIMIT REACHED") == null }
         openTarget()
-        await { overlayNode("Daily limit reached") != null }
+        await { overlayNode("DAILY LIMIT REACHED") != null }
         assertNull(app.monitorError.value)
     }
 
@@ -69,14 +69,14 @@ class EnforcementServiceTest {
         app.store.update { it.copy(tasks = listOf(FocusTask("reminder", "Prepare interview")),
             limits = listOf(AppLimit(target, "Clock", LimitPolicy(2, 1), start, end, 59_000))) }
         openTarget()
-        await { overlayNode("Before you keep scrolling…") != null }
+        await { overlayNode("ARE YOU SURE?") != null }
         assertNotNull(overlayNode("Prepare interview"))
         val usedAtReminder = app.store.state.value.limits.single().usedMs
         assertTrue(usedAtReminder >= 60_000)
         SystemClock.sleep(500)
         assertEquals(usedAtReminder, app.store.state.value.limits.single().usedMs)
-        clickOverlay("Continue")
-        await { overlayNode("Before you keep scrolling…") == null && app.store.state.value.checkpoint.activePackage == target }
+        clickOverlay("CONTINUE")
+        await { overlayNode("ARE YOU SURE?") == null && app.store.state.value.checkpoint.activePackage == target }
         shell("input keyevent KEYCODE_HOME")
         await { app.store.state.value.checkpoint.activePackage == null }
         assertTrue(app.store.state.value.limits.single().usedMs >= usedAtReminder)
