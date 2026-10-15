@@ -1,6 +1,19 @@
 <resources>
-    <string name="app_name">FocusAstra</string>
-    <string name="accessibility_label">FocusAstra app limits</string>
-    <string name="music_service_label">FocusAstra YouTube Music</string>
-    <string name="accessibility_description">Observes foreground app package names to measure restricted app usage and show blocking or task reminder overlays. Does not read screen text, typed content, or perform gestures. Data stays on this device. Enable only after accepting the disclosure in FocusAstra.</string>
+    <string name="app_name">ClutchState</string>
+    <string name="accessibility_label">ClutchState app limits</string>
+    <string name="music_service_label">ClutchState YouTube Music</string>
+    <string name="accessibility_description">Observes foreground app package names to measure restricted app usage and show blocking or task reminder overlays. Does not read screen text, typed content, or perform gestures. Data stays on this device. Enable only after accepting the disclosure in ClutchState.</string>
+    <string name="todo_widget_compact_name">ClutchState Todos 4×2</string>
+    <string name="todo_widget_expanded_name">ClutchState Todos 4×4</string>
+    <string name="todo_widget_description">Your local todo list with checkboxes you can tick from the home screen.</string>
+    <string name="todo_widget_empty">No tasks yet. Add one in ClutchState.</string>
+    <string name="todo_widget_dot" translatable="false">●</string>
+    <string name="todo_widget_check" translatable="false">✓</string>
+    <string name="todo_widget_short_title">TODOS</string>
+    <string name="todo_widget_eyebrow">CLUTCHSTATE / TODOS</string>
+    <string name="todo_widget_open_symbol" translatable="false">↗</string>
+    <string name="todo_widget_open_description">Open Todos in ClutchState</string>
+    <string name="todo_widget_preview_checked">⌄  1 checked item</string>
+    <string name="todo_widget_preview_first">Plan the day</string>
+    <string name="todo_widget_preview_second">Make progress</string>
 </resources>

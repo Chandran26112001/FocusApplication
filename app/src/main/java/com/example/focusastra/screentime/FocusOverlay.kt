@@ -144,7 +144,7 @@ class FocusOverlay(
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN, PixelFormat.OPAQUE).apply {
             gravity = Gravity.TOP or Gravity.START
-            title = "FocusAstra reminder and limit"
+            title = "ClutchState reminder and limit"
         }
         compose.setOnKeyListener { _, keyCode, event ->
             if (keyCode == android.view.KeyEvent.KEYCODE_BACK) {

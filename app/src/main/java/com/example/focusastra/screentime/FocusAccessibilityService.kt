@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.Configuration
 import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
@@ -26,6 +27,7 @@ class FocusAccessibilityService : AccessibilityService() {
     private lateinit var app: FocusApplication
     private lateinit var history: UsageHistory
     private lateinit var overlay: FocusOverlay
+    private lateinit var ambient: AmbientProgressOverlay
     private var deadline: Job? = null
     private var foreground: String? = null
     private var checkpoint = UsageCheckpoint()
@@ -54,6 +56,7 @@ class FocusAccessibilityService : AccessibilityService() {
         app = application as FocusApplication
         history = UsageHistory(this)
         overlay = FocusOverlay(this, app, { events.trySend(Event.Continue) }, { events.trySend(Event.Home) })
+        ambient = AmbientProgressOverlay(this)
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF); addAction(Intent.ACTION_SCREEN_ON); addAction(Intent.ACTION_USER_PRESENT)
             addAction(Intent.ACTION_TIME_CHANGED); addAction(Intent.ACTION_TIMEZONE_CHANGED); addAction(Intent.ACTION_SHUTDOWN)
@@ -63,7 +66,7 @@ class FocusAccessibilityService : AccessibilityService() {
         scope.launch {
             app.store.awaitReady()
             if (!app.store.state.value.accessibilityConsent) {
-                app.monitorError.value = "Open FocusAstra and accept the accessibility disclosure before enabling enforcement."
+                app.monitorError.value = "Open ClutchState and accept the accessibility disclosure before enabling enforcement."
                 disableSelf()
                 return@launch
             }
@@ -76,8 +79,9 @@ class FocusAccessibilityService : AccessibilityService() {
                     app.monitorError.value = e.message ?: "Enforcement needs attention."
                     val limited = app.store.state.value.limits.firstOrNull { it.packageName == foreground }
                     if (limited != null) {
+                        ambient.hide()
                         overlayPackage = limited.packageName
-                        overlay.show(limited, blocked = true, problem = "Enforcement cannot read or save local data. Return Home and reopen FocusAstra.")
+                        overlay.show(limited, blocked = true, problem = "Enforcement cannot read or save local data. Return Home and reopen ClutchState.")
                     }
                 }
             }
@@ -142,7 +146,7 @@ class FocusAccessibilityService : AccessibilityService() {
         deadline?.cancel()
         val state = app.store.state.value
         val limit = state.limits.firstOrNull { it.packageName == foreground }
-        if (limit == null || !usableScreen()) { overlay.hide(); overlayPackage = null; return }
+        if (limit == null || !usableScreen()) { ambient.hide(); overlay.hide(); overlayPackage = null; return }
         val blocked = limit.exhausted
         val reminder = !blocked && limit.usedMs >= limit.nextReminderMs && overlayPackage == null
         if (blocked || reminder) {
@@ -162,8 +166,15 @@ class FocusAccessibilityService : AccessibilityService() {
         }
         val current = app.store.state.value.limits.firstOrNull { it.packageName == foreground } ?: return
         val untilReset = (current.periodEnd - System.currentTimeMillis()).coerceAtLeast(1)
-        val wait = if (overlayPackage != null) untilReset else minOf(untilReset, current.remainingMs,
-            (current.nextReminderMs - current.usedMs).coerceAtLeast(1)).coerceAtLeast(1)
+        val wait = if (overlayPackage != null) {
+            ambient.hide()
+            untilReset
+        } else {
+            ambient.show(current.label, current.remainingMs, current.allowanceMs)
+            val nextMinute = (current.remainingMs % MINUTE_MS).takeIf { it > 0 } ?: MINUTE_MS
+            minOf(untilReset, current.remainingMs, (current.nextReminderMs - current.usedMs).coerceAtLeast(1),
+                nextMinute).coerceAtLeast(1)
+        }
         deadline = scope.launch { delay(wait); events.send(Event.Refresh) }
     }
 
@@ -186,10 +197,19 @@ class FocusAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() { if (initialized) events.trySend(Event.Refresh) }
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (initialized) {
+            ambient.refreshTheme()
+            ambient.refreshLayout()
+            events.trySend(Event.Refresh)
+        }
+    }
     override fun onDestroy() {
         if (initialized) {
             app.monitorConnected.value = false
             overlay.destroy()
+            ambient.destroy()
             if (registered) unregisterReceiver(receiver)
         }
         scope.cancel()

@@ -7,6 +7,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +27,7 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
-fun FocusDashboard(app: FocusApplication) {
+fun FocusDashboard(app: FocusApplication, openTodosRequest: Int = 0) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current
     val state by app.store.state.collectAsStateWithLifecycle()
@@ -58,6 +61,7 @@ fun FocusDashboard(app: FocusApplication) {
 
     Box(Modifier.fillMaxSize()) {
         FocusHome(
+            openTodosRequest = openTodosRequest,
             state = state, music = music, ready = ready, enforcementReady = enforcementReady,
             notificationsReady = access.notifications, monitorError = monitorError,
             onSettings = { settings = true }, onAddLimit = { addLimit = true },
@@ -88,10 +92,10 @@ fun FocusDashboard(app: FocusApplication) {
         val type = disclosure!!
         val title = when (type) { "accessibility" -> "App detection & blocking"; "usage" -> "Usage history access"; "music" -> "Stop after one song"; else -> "YouTube Music access" }
         val description = when (type) {
-            "accessibility" -> "FocusAstra uses Android accessibility to identify the package of the foreground app and to show blocking and reminder overlays. Android grants access to window information; FocusAstra reads only package names, never screen text or typed content. It stores usage locally and shares nothing. Enable FocusAstra on the next screen only if you agree."
-            "usage" -> "Android usage access lets FocusAstra read app foreground timestamps to recover usage after restarts and include earlier usage when you start a restriction. Only usage for restricted apps is stored, on this device. Enable usage access for FocusAstra on the next screen."
-            "music" -> "Android cannot reliably distinguish manual song selection from autoplay in another app. FocusAstra allows early changes and pauses track changes near the prior song’s end. Changes in the final 1.5 seconds, repeat-one, missing duration, ads, casting, and delayed callbacks may not work as expected. Pause/resume re-arms the current track. Notification access is required."
-            else -> "Android notification access is a broad permission. FocusAstra uses it only to obtain the YouTube Music media session and issue pause commands. It does not read, save, or dismiss notification messages. Enable access for FocusAstra on the next screen."
+            "accessibility" -> "ClutchState uses Android accessibility to identify the package of the foreground app and to show blocking and reminder overlays. Android grants access to window information; ClutchState reads only package names, never screen text or typed content. It stores usage locally and shares nothing. Enable ClutchState on the next screen only if you agree."
+            "usage" -> "Android usage access lets ClutchState read app foreground timestamps to recover usage after restarts and include earlier usage when you start a restriction. Only usage for restricted apps is stored, on this device. Enable usage access for ClutchState on the next screen."
+            "music" -> "Android cannot reliably distinguish manual song selection from autoplay in another app. ClutchState allows early changes and pauses track changes near the prior song’s end. Changes in the final 1.5 seconds, repeat-one, missing duration, ads, casting, and delayed callbacks may not work as expected. Pause/resume re-arms the current track. Notification access is required."
+            else -> "Android notification access is a broad permission. ClutchState uses it only to obtain the YouTube Music media session and issue pause commands. It does not read, save, or dismiss notification messages. Enable access for ClutchState on the next screen."
         }
         AlertDialog(onDismissRequest = { disclosure = null }, shape = RoundedCornerShape(14.dp),
             containerColor = FocusPalette.panel, title = { Text(title, style = MaterialTheme.typography.titleLarge) },
@@ -157,9 +161,15 @@ fun FocusDashboard(app: FocusApplication) {
     var error by remember { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
     AlertDialog(onDismissRequest = { if (!saving) onDismiss() }, shape = RoundedCornerShape(14.dp),
         containerColor = FocusPalette.panel, title = { Text("Make time for…", style = MaterialTheme.typography.titleLarge) }, text = {
-        Column { OutlinedTextField(title, { if (it.length <= 160) title = it }, label = { Text("Task") }, singleLine = true,
+        Column { OutlinedTextField(title, { if (it.length <= 160) title = it }, modifier = Modifier.focusRequester(focusRequester), label = { Text("Task") }, singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = FocusPalette.crimson,
                 unfocusedBorderColor = FocusPalette.line))
             error?.let { Text(it, color = MaterialTheme.colorScheme.error) } }

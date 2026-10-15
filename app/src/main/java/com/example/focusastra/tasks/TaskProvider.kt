@@ -14,5 +14,6 @@ class LocalTaskProvider(private val store: FocusStore) : TaskProvider {
         store.update { it.copy(tasks = it.tasks + FocusTask(UUID.randomUUID().toString(), trimmed)) }
     }
     suspend fun complete(id: String, completed: Boolean) = store.update { s -> s.copy(tasks = s.tasks.map { if (it.id == id) it.copy(completed = completed) else it }) }
+    suspend fun toggle(id: String) = store.update { s -> s.copy(tasks = s.tasks.map { if (it.id == id) it.copy(completed = !it.completed) else it }) }
     suspend fun delete(id: String) = store.update { s -> s.copy(tasks = s.tasks.filterNot { it.id == id }) }
 }

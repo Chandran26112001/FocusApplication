@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_surface"
+    android:orientation="vertical"
+    android:padding="14dp">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+        android:fontFamily="@font/space_mono_bold"
+        android:text="@string/todo_widget_short_title"
+        android:textColor="@color/widget_text"
+        android:textSize="12sp" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/widget_line" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:text="@string/todo_widget_preview_first"
+        android:textColor="@color/widget_text"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:drawableStart="@drawable/widget_checkbox_open"
+        android:drawablePadding="12dp" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/widget_line" />
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:gravity="center_vertical"
+        android:text="@string/todo_widget_preview_checked"
+        android:textColor="@color/widget_muted"
+        android:textSize="13sp" />
+</LinearLayout>

@@ -47,6 +47,7 @@ private val cardShape = RoundedCornerShape(13.dp)
 
 @Composable
 internal fun FocusHome(
+    openTodosRequest: Int,
     state: AppState,
     music: MusicStatus,
     ready: Boolean,
@@ -62,6 +63,8 @@ internal fun FocusHome(
     onMusicChange: (Boolean) -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var showCompleted by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openTodosRequest) { if (openTodosRequest > 0) tab = 1 }
     Column(Modifier.fillMaxSize().background(FocusPalette.background).systemBarsPadding()) {
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 25.dp, vertical = 20.dp),
@@ -130,7 +133,7 @@ internal fun FocusHome(
                     item {
                         Eyebrow("COGNITIVE INTERCEPT")
                         Spacer(Modifier.height(12.dp))
-                        Text("Things to do.", style = MaterialTheme.typography.headlineMedium)
+                        Text("Your todos", style = MaterialTheme.typography.headlineMedium)
                         Spacer(Modifier.height(8.dp))
                         Text("Keep a few clear actions close. They’ll appear when a restricted app pauses for a check-in.",
                             style = MaterialTheme.typography.bodyMedium, color = FocusPalette.muted)
@@ -140,9 +143,31 @@ internal fun FocusHome(
                     else item {
                         Column(Modifier.fillMaxWidth()) {
                             HorizontalDivider(color = FocusPalette.line)
-                            state.tasks.forEach { task ->
+                            state.tasks.filterNot { it.completed }.forEach { task ->
                                 TaskLine(task, ready, { onCompleteTask(task.id, !task.completed) }, { onDeleteTask(task.id) })
                                 HorizontalDivider(color = FocusPalette.line)
+                            }
+                            val completed = state.tasks.filter { it.completed }
+                            if (state.tasks.none { !it.completed }) {
+                                Text("All caught up.", Modifier.padding(vertical = 18.dp),
+                                    style = MaterialTheme.typography.bodyMedium, color = FocusPalette.muted)
+                                HorizontalDivider(color = FocusPalette.line)
+                            }
+                            if (completed.isNotEmpty()) {
+                                Row(Modifier.fillMaxWidth().heightIn(min = 56.dp)
+                                    .clickable { showCompleted = !showCompleted }
+                                    .semantics { contentDescription = if (showCompleted) "Hide checked items" else "Show checked items" }
+                                    .padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(if (showCompleted) "⌃" else "⌄", color = FocusPalette.muted,
+                                        style = MaterialTheme.typography.titleMedium)
+                                    Spacer(Modifier.width(14.dp))
+                                    Text("${completed.size} checked ${if (completed.size == 1) "item" else "items"}",
+                                        style = MaterialTheme.typography.bodyMedium, color = FocusPalette.muted)
+                                }
+                                if (showCompleted) completed.forEach { task ->
+                                    TaskLine(task, ready, { onCompleteTask(task.id, !task.completed) }, { onDeleteTask(task.id) })
+                                    HorizontalDivider(color = FocusPalette.line)
+                                }
                             }
                         }
                     }
@@ -179,8 +204,8 @@ internal fun FocusHome(
 }
 
 @Composable
-internal fun Eyebrow(text: String, color: androidx.compose.ui.graphics.Color = FocusPalette.muted) {
-    Text(text, style = MaterialTheme.typography.labelSmall, color = color)
+internal fun Eyebrow(text: String, color: androidx.compose.ui.graphics.Color? = null) {
+    Text(text, style = MaterialTheme.typography.labelSmall, color = color ?: FocusPalette.muted)
 }
 
 @Composable
@@ -195,18 +220,21 @@ internal fun CrimsonButton(label: String, enabled: Boolean = true, onClick: () -
 @Composable
 internal fun ProgressRing(progress: Float, modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
     val animated by animateFloatAsState(progress.coerceIn(0f, 1f), tween(450), label = "Time remaining")
+    val raised = FocusPalette.panelRaised
+    val line = FocusPalette.line
+    val crimson = FocusPalette.crimson
     Box(modifier, contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
             val stroke = 9.dp.toPx()
             val diameter = size.minDimension
-            drawCircle(FocusPalette.panelRaised, radius = diameter / 2 - stroke / 2,
+            drawCircle(raised, radius = diameter / 2 - stroke / 2,
                 style = Stroke(stroke))
             val inset = 18.dp.toPx()
             val innerSize = diameter - inset * 2
             val topLeft = androidx.compose.ui.geometry.Offset((size.width - innerSize) / 2, (size.height - innerSize) / 2)
             val arcSize = androidx.compose.ui.geometry.Size(innerSize, innerSize)
-            drawArc(FocusPalette.line, -90f, 360f, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
-            drawArc(FocusPalette.crimson, -90f, 360f * animated, false, topLeft, arcSize,
+            drawArc(line, -90f, 360f, false, topLeft, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
+            drawArc(crimson, -90f, 360f * animated, false, topLeft, arcSize,
                 style = Stroke(stroke, cap = StrokeCap.Round))
         }
         content()

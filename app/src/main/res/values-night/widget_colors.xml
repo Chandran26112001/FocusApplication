@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_background">#0B0B0C</color>
+    <color name="widget_text">#F5F5F7</color>
+    <color name="widget_muted">#9AA8B8</color>
+    <color name="widget_subdued">#777E89</color>
+    <color name="widget_line">#303034</color>
+    <color name="widget_crimson">#FF2857</color>
+    <color name="widget_crimson_translucent">#66FF2857</color>
+</resources>

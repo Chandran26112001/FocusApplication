@@ -185,6 +185,8 @@ private fun FocusField(value: String, onChange: (String) -> Unit, label: String,
 private fun BoundaryArc(minutes: Int, onMinutesChange: (Int) -> Unit) {
     val display = minutes.coerceAtLeast(0)
     val latestOnChange by rememberUpdatedState(onMinutesChange)
+    val line = FocusPalette.line
+    val crimson = FocusPalette.crimson
     Box(Modifier.fillMaxWidth().height(174.dp)
             .semantics { contentDescription = "Daily allowance arc. Drag to adjust up to four hours." }
             .pointerInput(Unit) {
@@ -207,8 +209,8 @@ private fun BoundaryArc(minutes: Int, onMinutesChange: (Int) -> Unit) {
             val top = size.height - diameter / 2
             val arcSize = androidx.compose.ui.geometry.Size(diameter, diameter)
             val offset = androidx.compose.ui.geometry.Offset(inset, top)
-            drawArc(FocusPalette.line, 180f, 180f, false, offset, arcSize, style = Stroke(stroke, cap = StrokeCap.Butt))
-            drawArc(FocusPalette.crimson, 180f, 180f * (display.coerceAtMost(240) / 240f), false,
+            drawArc(line, 180f, 180f, false, offset, arcSize, style = Stroke(stroke, cap = StrokeCap.Butt))
+            drawArc(crimson, 180f, 180f * (display.coerceAtMost(240) / 240f), false,
                 offset, arcSize, style = Stroke(stroke, cap = StrokeCap.Round))
         }
         Column(Modifier.padding(bottom = 5.dp), horizontalAlignment = Alignment.CenterHorizontally) {
